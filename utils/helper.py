@@ -16,21 +16,10 @@ def format_verification_cot_for_thinkprm(tokenizer, problem, solution, cot=None,
 
 {_instruction}
 """.strip()       
-    if cot: # training
-        if "Let's verify step by step:" not in cot:
-            cot = "Let's verify step by step:\n" + cot
-        
-        s = tokenizer.apply_chat_template([
-            {'role': "user", "content": instruction_template.replace('{problem}', problem).replace('{solution}', solution).replace('{_instruction}', _instruction)},
-            {'role': "assistant", "content": cot}
-        ], tokenize=False, add_generation_prompt=False)
-        
-        if "Let's verify step by step:" not in s:
-            s = "Let's verify step by step:\n" + s
-    else: # inference
-        s = tokenizer.apply_chat_template([
-            {'role': "user", "content": instruction_template.replace('{problem}', problem).replace('{solution}', solution).replace('{_instruction}', _instruction)}
-        ], tokenize=False, add_generation_prompt=True) + "\nLet's verify step by step:"
+
+    s = tokenizer.apply_chat_template([
+        {'role': "user", "content": instruction_template.replace('{problem}', problem).replace('{solution}', solution).replace('{_instruction}', _instruction)}
+    ], tokenize=False, add_generation_prompt=True)
                 
     return s
 

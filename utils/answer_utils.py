@@ -1,6 +1,7 @@
 import re
 from typing import Optional
 from collections import Counter
+import re
 
 
 
@@ -57,16 +58,16 @@ def get_action_trace_from_plan_str(plan_str):
     return "\n".join(action_trace)
 
 
-def extract_step_cots_and_labels(output_str, correct_token, incorrect_token):
-    step_cots = []
+def extract_step_labels(output_str, correct_token, incorrect_token):
     step_labels = []
-
-    for line in output_str.split('\n'):
-        if ('correct?' in line.lower() and correct_token == ' Yes' and correct_token in line) or ('\\boxed{' in line and correct_token in line):
+    # Find all boxed tokens (correct or incorrect)
+    pattern = r'\\boxed\{(' + re.escape(correct_token) + '|' + re.escape(incorrect_token) + r')\}'
+    matches = re.findall(pattern, output_str)
+    
+    for match in matches:
+        if match == correct_token:
             step_labels.append(1)
-            step_cots.append(line.strip())
-        elif ('correct?' in line.lower() and incorrect_token == ' No' and incorrect_token in line) or ('\\boxed{' in line and incorrect_token in line):
+        elif match == incorrect_token:
             step_labels.append(0)
-            step_cots.append(line.strip())
-                        
-    return step_cots, step_labels
+            
+    return step_labels
