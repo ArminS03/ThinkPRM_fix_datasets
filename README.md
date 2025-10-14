@@ -103,13 +103,22 @@ reasoning_steps = [
 # Evaluate correctness
 results = prm.predict_correctness_batch([question], [reasoning_steps])
 
+# results will contain detailed information about the verification:
+# results = [
+#     {
+#         'step_labels': [[1, 1, 1]],  # 1 for correct steps, 0 for incorrect
+#         'inputs': 'What is 15% of 200?...',  # Original input prompt
+#         'outputs': ['Let me verify this step by step...</think>...'],  # Generated verification text
+#         'prefix_score': 0.85  # correctness score of the whole prefix. If n>1, this will be averaged across different CoTs (parallel scaling)
+#     }
+# ]
 ```
 
 
 ## Sequential scaling through multi-round verification 
 
 
-### Multi-Round Verification
+### Multi-Round Verification i.e., budget forcing -- see paper for more details
 
 For more thorough evaluation, you can enable multi-round verification:
 
@@ -117,7 +126,7 @@ For more thorough evaluation, you can enable multi-round verification:
 prm = ThinkPRM(
     model_name_or_path="launch/ThinkPRM-1.5B",
     multiround_verifier=True,
-    n_thinking_rounds=3,  # Allow 3 rounds of thinking
+    n_thinking_rounds=3,  # Allow 3 rounds of thinking with budget forcing
     temperature=0.1,
     n=1 
 )
@@ -125,6 +134,7 @@ prm = ThinkPRM(
 problem = "Solve for x: 2x + 3 = 7"
 steps = ["Subtract 3 from both sides: 2x = 4", "Divide by 2: x = 7"]
 results = model.predict_correctness_batch_sequential_scaling(questions=[problem], prefix_steps_batch=[steps])
+
 ```
 
    
