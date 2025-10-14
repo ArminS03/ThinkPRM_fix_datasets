@@ -78,6 +78,55 @@ now let's setup the other main environment
 uv venv
 uv sync
 ```
+
+### Basic Usage
+
+```python
+from prm import ThinkPRM
+
+# Initialize ThinkPRM
+prm = ThinkPRM(
+    model_name_or_path="launch/ThinkPRM-1.5B",
+    max_length=4096,
+    temperature=0.1,
+    n=1
+)
+
+# Example question and reasoning steps
+question = "What is 15% of 200?"
+reasoning_steps = [
+    "To find 15% of 200, I need to multiply 200 by 0.15",
+    "200 × 0.15 = 30",
+    "Therefore, 15% of 200 is 30"
+]
+
+# Evaluate correctness
+results = prm.predict_correctness_batch([question], [reasoning_steps])
+
+```
+
+
+## Sequential scaling through multi-round verification 
+
+
+### Multi-Round Verification
+
+For more thorough evaluation, you can enable multi-round verification:
+
+```python
+prm = ThinkPRM(
+    model_name_or_path="launch/ThinkPRM-1.5B",
+    multiround_verifier=True,
+    n_thinking_rounds=3,  # Allow 3 rounds of thinking
+    temperature=0.1,
+    n=1 
+)
+
+problem = "Solve for x: 2x + 3 = 7"
+steps = ["Subtract 3 from both sides: 2x = 4", "Divide by 2: x = 7"]
+results = model.predict_correctness_batch_sequential_scaling(questions=[problem], prefix_steps_batch=[steps])
+```
+
    
 
 ## Running ThinkPRM: Use the provided recipes to run ThinkPRM with different models and configurations:
@@ -108,7 +157,7 @@ CUDA_VISIBLE_DEVICES=1 uv run python search-and-learn/scripts/test_time_compute.
 ```
 This should sample solutions from the generator model over MATH-500 dataset, score samples using ThinkPRM, and then at the end it will also calculate accuracy for different N values and store these in config.output_dir. 
 
-### Parallel and Sequential Scaling with ThinkPRM 
+### Test-time scaling Scaling with ThinkPRM 
 
 
 <div align="center">
