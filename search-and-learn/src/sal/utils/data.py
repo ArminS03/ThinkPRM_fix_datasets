@@ -29,6 +29,7 @@ logger = logging.getLogger()
 
 def get_dataset(config: Config) -> Dataset:
     if 'livecodebench' in config.dataset_name:
+        print(f"loading dataset: {config.dataset_name}")
         dataset = load_dataset(config.dataset_name, version_tag="release_v5", split="test")
     else:
         dataset = load_dataset(config.dataset_name, split=config.dataset_split)

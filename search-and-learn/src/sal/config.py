@@ -59,6 +59,7 @@ class Config:
     
     verifier_endpoint: str = "http://localhost:30000"
     prm_device: str = 'cuda:0'
+    llm_device: str = 'cuda:1'  # Device for the generator/LLM model
     just_sample: bool = False
     long_cot: bool = False
     max_verification_length: int = 8192

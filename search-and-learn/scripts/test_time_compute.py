@@ -33,7 +33,7 @@ from sal.utils.score import score as score_dataset
 from sal.models.reward_models import MathShepherd, RLHFFlow, QwenPRM
 
 from prm import DiscriminativePRM
-from prm.thinkprm_api import APIThinkPRMVerifier
+# from prm.thinkprm_api import APIThinkPRMVerifier
 
 def load_prm(config: Config):
     if config.prm_path == "peiyi9979/math-shepherd-mistral-7b-prm":
@@ -45,24 +45,24 @@ def load_prm(config: Config):
     if config.prm_path == "Qwen/Qwen2.5-Math-PRM-7B":
         return QwenPRM(config)
         
-    elif config.prm_type == "thinkprm":
-        prm = APIThinkPRMVerifier(
-            endpoint=config.verifier_endpoint,
-            max_length=config.max_verification_length,
-            n=config.prm_n,
-            temperature=config.prm_temperature,
-            seed=0,
-            decision_temperature=config.prm_decision_temperature,
-            score_label_idx=config.prm_score_label_idx,
-            label_categories=config.prm_label_categories,
-            predecision_string=config.prm_predecision_string,
-            process_verifier=config.approach == "beam_search",
-            long_cot=config.long_cot,
-            n_thinking_rounds=config.n_thinking_rounds,
-            trigger_phrase=config.trigger_phrase,
-            verifier_instruction=config.prm_verifier_instruction,
-        )
-        print("Initialized ThinkPRM client...")
+    # elif config.prm_type == "thinkprm":
+    #     prm = APIThinkPRMVerifier(
+    #         endpoint=config.verifier_endpoint,
+    #         max_length=config.max_verification_length,
+    #         n=config.prm_n,
+    #         temperature=config.prm_temperature,
+    #         seed=0,
+    #         decision_temperature=config.prm_decision_temperature,
+    #         score_label_idx=config.prm_score_label_idx,
+    #         label_categories=config.prm_label_categories,
+    #         predecision_string=config.prm_predecision_string,
+    #         process_verifier=config.approach == "beam_search",
+    #         long_cot=config.long_cot,
+    #         n_thinking_rounds=config.n_thinking_rounds,
+    #         trigger_phrase=config.trigger_phrase,
+    #         verifier_instruction=config.prm_verifier_instruction,
+    #     )
+    #     print("Initialized ThinkPRM client...")
         
     elif config.prm_type == "discriminative":
         prm = DiscriminativePRM(
@@ -99,6 +99,31 @@ def main():
     num_gpus = torch.cuda.device_count()
     
     if not config.cached_solutions_path:
+        # Configure device assignment for LLM and PRM
+        # vLLM uses CUDA_VISIBLE_DEVICES to determine which GPU to use
+        # We set it so the LLM's GPU appears first, making it device 0 for vLLM
+        original_cuda_visible = os.environ.get('CUDA_VISIBLE_DEVICES', None)
+        
+        if config.llm_device and config.llm_device.startswith('cuda:'):
+            llm_device_id = int(config.llm_device.split(':')[1])
+            prm_device_id = int(config.prm_device.split(':')[1]) if config.prm_device.startswith('cuda:') else 0
+            
+            # Set CUDA_VISIBLE_DEVICES with LLM's GPU first, then PRM's GPU
+            # This makes LLM's GPU appear as device 0 to vLLM
+            if llm_device_id != prm_device_id:
+                # Both GPUs visible, LLM's GPU first
+                os.environ['CUDA_VISIBLE_DEVICES'] = f"{llm_device_id},{prm_device_id}"
+                # PRM device needs to be remapped to its position in CUDA_VISIBLE_DEVICES
+                # Since PRM's GPU is second in the list, it becomes cuda:1
+                config.prm_device = 'cuda:1'
+                print(f"Setting LLM to use physical GPU {llm_device_id} (visible as cuda:0 to vLLM)")
+                print(f"PRM will use physical GPU {prm_device_id} (remapped to {config.prm_device})")
+            else:
+                # Same GPU for both - not ideal but handle it
+                os.environ['CUDA_VISIBLE_DEVICES'] = str(llm_device_id)
+                config.prm_device = 'cuda:0'
+                print(f"Warning: Both LLM and PRM are set to use the same GPU {llm_device_id}")
+        
         llm = LLM(
             model=config.model_path,
             gpu_memory_utilization=config.gpu_memory_utilization,
@@ -107,9 +132,11 @@ def main():
             seed=config.seed,
             tensor_parallel_size=1,
         )
+        
+        # Note: We don't restore CUDA_VISIBLE_DEVICES because vLLM workers need it
+        # The PRM device has been remapped to work with the new device visibility
     else:
         llm = None
-            
     if config.just_sample:
         prm = None
     else:
@@ -121,6 +148,10 @@ def main():
     if config.cached_solutions_path:
         print(f"Loading cached solutions from {config.cached_solutions_path}")
         print(f"n: {config.n}")
+        # Create parent directories if they don't exist
+        parent_dir = os.path.dirname(config.cached_solutions_path)
+        if parent_dir:
+            pathlib.Path(parent_dir).mkdir(parents=True, exist_ok=True)
         with open(config.cached_solutions_path, 'r') as f:
             examples = [json.loads(line.strip()) for line in f.readlines()]            
         # Create dict mapping problems to completions and tokens
