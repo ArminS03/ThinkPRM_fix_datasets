@@ -80,8 +80,8 @@ def score(dataset: Dataset, config: Config) -> Dataset:
             num_proc=config.num_proc,
             desc=f"Compute naive pred {n}",
         )
-        # Nuke unused columns to keep dataset lean
+        # Nuke unused columns to keep dataset lean (but preserve completions for final output)
         dataset = dataset.remove_columns(
-            [f"completions@{n}", f"agg_scores@{n}", f"preds@{n}"]
+            [f"agg_scores@{n}", f"preds@{n}"]
         )
     return dataset

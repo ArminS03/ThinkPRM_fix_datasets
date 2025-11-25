@@ -21,8 +21,10 @@ def evaluate(benchmark: str, data_file: str, dataset_col: str = "pred", samples:
     samples = Dataset.from_list(samples)
     if "idx" not in samples.column_names:
         samples = samples.map(lambda x, idx: {"idx": idx}, with_indices=True)
-        
+
     # Check if 'solution' column is missing but 'answer' column exists
+    if 'solution' not in samples.column_names and 'answer' not in samples.column_names:
+        samples = samples.map(lambda x: {**x, "solution": x['pred']})
     if 'solution' not in samples.column_names and 'answer' in samples.column_names:
         print("'solution' column not found. Copying from 'answer' column.")
         # Create a new column while preserving all existing columns
@@ -36,7 +38,6 @@ def evaluate(benchmark: str, data_file: str, dataset_col: str = "pred", samples:
         x['gt_cot'], x['gt'] = parse_ground_truth(x, benchmark)
         return x
     samples = samples.map(parse_gt, desc="Parsing ground truth", num_proc=1, load_from_cache_file=False)
-    
     n = int(dataset_col.split("@")[1])
     # Calculate coverage
     coverage_scores = []
@@ -121,18 +122,20 @@ if __name__ == "__main__":
                 local_data["cov"] = scores["cov"]
         return local_data
 
+    print(f"votings: {args.voting_n}")
     with tqdm(total=len(args.voting_n), desc="Evaluating voting_n") as progress_bar:
         for n in args.voting_n:
-            try:
-                result = evaluate_for_n(n)
-                data["n"].append(result["n"])
-                data["acc_naive"].append(result["acc_naive"]) 
-                data["acc_weighted"].append(result["acc_weighted"])
-                data["acc_maj"].append(result["acc_maj"])
-                data["cov"].append(result["cov"])
-            except Exception as e:
-                print(f"Error processing n={n}: {e}")
-            progress_bar.update(1)  
+            print(f'evaluation n: {n}')
+            # try:
+            result = evaluate_for_n(n)
+            data["n"].append(result["n"])
+            data["acc_naive"].append(result["acc_naive"]) 
+            data["acc_weighted"].append(result["acc_weighted"])
+            data["acc_maj"].append(result["acc_maj"])
+            data["cov"].append(result["cov"])
+            # except Exception as e:
+            #     print(f"Error processing n={n}: {e}")
+            progress_bar.update(1)
 
     ### save to same directory as data_file, under results.jsonl
     save_dir = os.path.dirname(args.data_file)

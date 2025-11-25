@@ -160,6 +160,9 @@ def _dvts(batch_of_prompts: list[str], config: Config, llm: LLM, prm: PRM):
 
 
 def dvts(examples, config: Config, llm: LLM, prm: PRM):
+    if not 'problem' in examples.keys():
+        examples["problem"] = examples["question_content"]
+        del examples["question_content"]
     problems = examples["problem"]
     beam_results = _dvts(problems, config, llm, prm)
 

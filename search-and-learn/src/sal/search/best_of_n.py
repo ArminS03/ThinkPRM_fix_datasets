@@ -22,10 +22,10 @@ from sal.utils.score import aggregate_scores
 import json
 
 def best_of_n(x, config: Config, llm: LLM, prm: PRM):
-    print(f"x: {x}")
     if not 'completions' in x:
         if not 'problem' in x:
             x["problem"] = x["question_content"]
+            del x["question_content"]
         convs = [
             [
                 {"role": "system", "content": config.system_prompt},

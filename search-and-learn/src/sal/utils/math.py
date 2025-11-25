@@ -130,25 +130,47 @@ def extract_completion_answers(
 def compute_naive_pred(x: Dict[str, List[Any]], n: int) -> Dict[str, List[str]]:
     preds = x[f"preds@{n}"]
     scores = x[f"agg_scores@{n}"]
-    preds = [
-        (p, s) for p, s in sorted(zip(preds, scores), key=lambda x: x[1], reverse=True)
-    ]
-    return {f"pred_naive@{n}": "\\boxed{" + preds[0][0] + "}"}
+    completions = x[f"completions@{n}"]
+    
+    # Sort by score in descending order, keeping track of original indices
+    indexed_preds_scores = [(i, p, s) for i, (p, s) in enumerate(zip(preds, scores))]
+    indexed_preds_scores.sort(key=lambda x: x[2], reverse=True)
+    
+    # Get the best prediction (highest score)
+    best_idx, best_pred, best_score = indexed_preds_scores[0]
+    best_completion = completions[best_idx]
+    
+    return {
+        f"pred_naive@{n}": "\\boxed{" + best_pred + "}",
+        f"completion_naive@{n}": best_completion
+    }
 
 
 def compute_weighted_pred(x: Dict[str, List[Any]], n: int) -> Dict[str, List[str]]:
     preds = x[f"preds@{n}"]
     scores = x[f"agg_scores@{n}"]
+    completions = x[f"completions@{n}"]
+    
+    best_answer, best_idx = find_answer_with_largest_sum_and_idx(preds, scores)
+    best_completion = completions[best_idx]
+    
     return {
-        f"pred_weighted@{n}": "\\boxed{"
-        + find_answer_with_largest_sum(preds, scores)
-        + "}"
+        f"pred_weighted@{n}": "\\boxed{" + best_answer + "}",
+        f"completion_weighted@{n}": best_completion
     }
 
 
 def compute_maj_pred(x: Dict[str, List[Any]], n: int) -> Dict[str, List[str]]:
     preds = x[f"preds@{n}"]
-    return {f"pred_maj@{n}": "\\boxed{" + find_majority_answer(preds) + "}"}
+    completions = x[f"completions@{n}"]
+    
+    best_answer, best_idx = find_majority_answer_and_idx(preds)
+    best_completion = completions[best_idx]
+    
+    return {
+        f"pred_maj@{n}": "\\boxed{" + best_answer + "}",
+        f"completion_maj@{n}": best_completion
+    }
 
 
 def find_answer_with_largest_sum(answers: List[str], scores: List[float]) -> str:
@@ -183,6 +205,40 @@ def find_answer_with_largest_sum(answers: List[str], scores: List[float]) -> str
     # Find the canonical form with the largest cumulative score
     max_canonical = max(canonical_groups, key=canonical_groups.get)
     return canonical_to_original[max_canonical]
+
+
+def find_answer_with_largest_sum_and_idx(answers: List[str], scores: List[float]) -> tuple[str, int]:
+    """
+    Groups answers based on their canonical forms and finds the group with the largest sum of scores.
+    Returns both the answer and its index.
+
+    Args:
+        answers (list of str): A list of strings to be grouped.
+        scores (list of float): A list of scores corresponding to each string.
+
+    Returns:
+        tuple: (answer_string, index_of_best_completion)
+    """
+    if len(answers) == 0 or len(scores) == 0:
+        raise ValueError("answers and scores cannot be empty")
+
+    # Grouping using canonical forms
+    canonical_groups = defaultdict(float)  # Stores cumulative scores for each canonical group
+    canonical_to_info = {}  # Maps canonical form back to (original_answer, original_index)
+
+    for idx, (answer, score) in enumerate(zip(answers, scores)):
+        # Compute the canonical form
+        canonical_form = memoized_canonical_form(answer)
+
+        # Aggregate scores and track the original answer
+        canonical_groups[canonical_form] += score
+        if canonical_form not in canonical_to_info:
+            canonical_to_info[canonical_form] = (answer, idx)
+
+    # Find the canonical form with the largest cumulative score
+    max_canonical = max(canonical_groups, key=canonical_groups.get)
+    answer, idx = canonical_to_info[max_canonical]
+    return answer, idx
 
 
 def find_majority_answer(answers: List[str]) -> str:
@@ -225,6 +281,44 @@ def find_majority_answer(answers: List[str]) -> str:
         if count == max_count:
             # Return the first occurring group in case of a tie
             return canonical_to_original[canonical_form]
+
+
+def find_majority_answer_and_idx(answers: List[str]) -> tuple[str, int]:
+    """
+    Groups answers based on their canonical forms and finds the group with the largest number of elements.
+    Returns both the answer and its index. In case of a tie, returns the first occurring group.
+
+    Args:
+        answers (list of str): A list of strings to be grouped.
+
+    Returns:
+        tuple: (answer_string, index_of_best_completion)
+    """
+    if len(answers) == 0:
+        raise ValueError("answers cannot be empty")
+
+    # Group answers using canonical forms
+    canonical_groups = defaultdict(int)  # Count occurrences for each canonical form
+    canonical_to_info = {}  # Map canonical form back to (answer, index)
+
+    for idx, answer in enumerate(answers):
+        # Compute the canonical form
+        canonical_form = memoized_canonical_form(answer)
+
+        # Increment count for the canonical form
+        canonical_groups[canonical_form] += 1
+
+        # Track the original answer for this canonical form
+        if canonical_form not in canonical_to_info:
+            canonical_to_info[canonical_form] = (answer, idx)
+
+    # Find the canonical form with the largest count
+    max_count = max(canonical_groups.values())
+    for canonical_form, count in canonical_groups.items():
+        if count == max_count:
+            # Return the first occurring group in case of a tie
+            answer, idx = canonical_to_info[canonical_form]
+            return answer, idx
 
 
 def pass_at_k(n: int, c: int, k: int) -> float:

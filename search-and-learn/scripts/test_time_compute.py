@@ -96,7 +96,6 @@ def main():
     
     approach_fn = APPROACHES[config.approach]
 
-    num_gpus = torch.cuda.device_count()
     
     if not config.cached_solutions_path:
         # Configure device assignment for LLM and PRM
@@ -167,6 +166,8 @@ def main():
         
         # Update dataset with cached completions if available
         def update_example(example):
+            if 'problem' not in example.keys():
+                example['problem'] = example['question_content']
             if example['problem'] in problem_to_outputs:
                 outputs = problem_to_outputs[example['problem']]
                 assert len(outputs['completions']) >= config.n, f"Cached completions for {example['problem']} have only {len(outputs['completions'])} completions instead of {config.n}"

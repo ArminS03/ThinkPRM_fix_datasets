@@ -14,3 +14,8 @@ gpt-plan-benchmark/
 gpt-plan-benchmark
 .DS_Store
 .vscode/
+
+*.out
+*.json
+*.jsonl
+.python-version

@@ -204,6 +204,9 @@ def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[B
 
 
 def beam_search(examples, config: Config, llm: LLM, prm: PRM):
+    if not 'problem' in examples.keys():
+        examples["problem"] = examples["question_content"]
+        del examples["question_content"]
     problems = examples["problem"]
     beam_results = _beam_search(problems, config, llm, prm)
 

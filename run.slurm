@@ -10,4 +10,4 @@
 
 source .venv/bin/activate
 
-CUDA_VISIBLE_DEVICES=1,2 uv run python search-and-learn/scripts/test_time_compute.py search-and-learn/recipes/MATH-500/Llama-3.2-3B-Instruct/best_of_n/qwen_math_prm.yaml
+CUDA_VISIBLE_DEVICES=0,1 uv run python search-and-learn/scripts/test_time_compute.py search-and-learn/recipes/MATH-500/Llama-3.2-3B-Instruct/best_of_n/qwen_math_prm.yaml
