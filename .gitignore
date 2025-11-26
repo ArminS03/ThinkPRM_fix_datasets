@@ -16,6 +16,4 @@ gpt-plan-benchmark
 .vscode/
 
 *.out
-*.json
-*.jsonl
 .python-version
