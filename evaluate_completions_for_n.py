@@ -128,15 +128,10 @@ def evaluate_all_n(
                 samples_list=dataset_samples,
                 generations_list=generations_list,
                 k_list=[n],
-                num_process_evaluate=num_processes,
+                num_process_evaluate=8,
                 timeout=timeout,
-                debug=True,
+                debug=False,
             )
-            print(f'metrics: {metrics}')
-            print("################################")
-            print(f'results: {results}')
-            import sys
-            sys.exit(-1)
             results_per_n[n] = metrics
             if metrics:
                 print(f"  Results for n={n}: {metrics}")

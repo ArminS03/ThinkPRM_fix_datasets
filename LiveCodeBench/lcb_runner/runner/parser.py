@@ -90,7 +90,7 @@ def get_args():
         default=12,
         help="Number of processes to use for evaluation",
     )
-    parser.add_argument("--timeout", type=int, default=6, help="Timeout for evaluation")
+    parser.add_argument("--timeout", type=int, default=10, help="Timeout for evaluation")
     parser.add_argument(
         "--openai_timeout", type=int, default=90, help="Timeout for requests to OpenAI"
     )

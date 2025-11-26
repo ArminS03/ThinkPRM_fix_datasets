@@ -9,6 +9,7 @@ from datetime import datetime
 
 # to run the solution files we're using a timing based approach
 import signal
+import traceback
 
 import numpy as np
 
@@ -193,6 +194,7 @@ def compile_code(code: str, timeout: int):
     signal.alarm(timeout)
     try:
         tmp_sol = ModuleType("tmp_sol", "")
+        print(code)
         exec(code, tmp_sol.__dict__)
         if "class Solution" in code:
             # leetcode wraps solutions in `Solution`
@@ -478,6 +480,8 @@ def run_test(sample, test=None, debug=False, timeout=6):
                 )
                 return results, metadata
             except Exception as e:
+                print(f"Error inside grade_call_based: {e}")
+                print(traceback.format_exc())
                 return [-4], {
                     "error_code": -4,
                     "error_message": f"Error during testing: {e}",
@@ -498,6 +502,8 @@ def run_test(sample, test=None, debug=False, timeout=6):
                 )
                 return results, metadata
             except Exception as e:
+                print(f"Error inside grade_stdio: {e}")
+                print(traceback.format_exc())
                 return [-4], {
                     "error_code": -4,
                     "error_message": f"Error during testing: {e}",

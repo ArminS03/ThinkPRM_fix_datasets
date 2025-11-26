@@ -14,7 +14,9 @@ from lcb_runner.runner.scenario_router import (
 
 def main():
     args = get_args()
-
+    args.release_version = "release_v5"
+    args.custom_output_file = "/fs/nexus-scratch/armins/ThinkPRM/LiveCodeBench/dataset/completions_1.json"
+    args.num_process_evaluate = 12
     benchmark, _ = build_prompt_benchmark(args)
 
     with open(args.custom_output_file, "r") as f:

@@ -57,6 +57,7 @@ def build_prompt_benchmark(
                 start_date=args.start_date,
                 end_date=args.end_date
             )
+        benchmark = benchmark[:200]
         benchmark = sorted(benchmark, key=lambda x: x.question_id)
         format_prompt = format_prompt_generation
     elif scenario == Scenario.testoutputprediction:
